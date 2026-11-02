@@ -76,3 +76,18 @@ def test_overloaded_main_model_is_retried_once_before_fallback(monkeypatch):
     agent, calls = agent_with_fake_api(overloaded)
     assert agent._generate() == ("response", "backup")
     assert calls == ["main", "main", "backup"]
+
+
+def test_unknown_main_model_switches_to_fallback_without_retrying():
+    retired = errors.ClientError(404, {"error": {"code": 404, "message": "no longer available", "status": "NOT_FOUND"}})
+    agent, calls = agent_with_fake_api(retired)
+    assert agent._generate() == ("response", "backup")
+    assert calls == ["main", "backup"]
+
+
+def test_other_client_errors_are_not_hidden():
+    bad_request = errors.ClientError(400, {"error": {"code": 400, "message": "bad", "status": "INVALID_ARGUMENT"}})
+    agent, calls = agent_with_fake_api(bad_request)
+    with pytest.raises(errors.ClientError):
+        agent._generate()
+    assert calls == ["main"]

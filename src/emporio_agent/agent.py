@@ -185,10 +185,13 @@ class Agent:
                     last_error = error
                     break
                 except errors.APIError as error:
+                    last_error = error
+                    if error.code == 404:
+                        # Model name unknown or retired for this key: retrying will not help.
+                        break
                     # 429 (rate limit) and 5xx (overloaded) are temporary; anything else is a bug.
                     if error.code != 429 and error.code < 500:
                         raise
-                    last_error = error
                     if attempt < attempts - 1:
                         time.sleep(1)
         raise last_error
