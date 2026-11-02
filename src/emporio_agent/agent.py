@@ -8,6 +8,7 @@ arguments, and what came back. That is also what the CLI debug mode shows.
 import time
 from dataclasses import dataclass, field
 
+import httpx
 from google import genai
 from google.genai import errors, types
 
@@ -17,8 +18,11 @@ from .tools import get_order, payment_options, search_products
 
 MAX_TOOL_ROUNDS = 5
 MAX_FAILED_ORDER_LOOKUPS = 3
-RETRIES_PER_MODEL = 3
-REQUEST_TIMEOUT_MS = 30_000
+# (attempts, timeout in ms) for the main and the fallback model. The main
+# model gives up early so a customer never waits long before the fallback
+# answers; the fallback is the last resort, so it gets more time.
+MAIN_MODEL_POLICY = (2, 12_000)
+FALLBACK_MODEL_POLICY = (2, 25_000)
 UNAVAILABLE_MESSAGE = (
     "Opa, estou com uma instabilidade aqui e não consegui responder agora. "
     "Pode tentar de novo em instantes? Se preferir, fale com a equipe pelo WhatsApp (67) 3341-4444."
@@ -153,34 +157,40 @@ class Agent:
                     )
                 self.history.append(types.Content(role="user", parts=parts))
             error = f"Limite de {MAX_TOOL_ROUNDS} rodadas de ferramentas atingido"
-        except (errors.APIError, IndexError, AttributeError) as exc:
+        except (errors.APIError, httpx.TimeoutException, IndexError, AttributeError) as exc:
             error = repr(exc)
         # Failed turn: drop it so the history never has dangling messages.
         del self.history[turn_start:]
         return Reply(UNAVAILABLE_MESSAGE, tool_calls, error=error)
 
     def _generate(self) -> tuple[types.GenerateContentResponse, str]:
-        config = types.GenerateContentConfig(
-            system_instruction=build_system_prompt(now()),
-            tools=self.tools,
-            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-            http_options=types.HttpOptions(timeout=REQUEST_TIMEOUT_MS),
-        )
+        system_prompt = build_system_prompt(now())
+        policies = [MAIN_MODEL_POLICY, FALLBACK_MODEL_POLICY]
         last_error: Exception | None = None
-        for model in self.models:
-            for attempt in range(RETRIES_PER_MODEL):
+        for model, (attempts, timeout_ms) in zip(self.models, policies):
+            config = types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                tools=self.tools,
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+                http_options=types.HttpOptions(timeout=timeout_ms),
+            )
+            for attempt in range(attempts):
                 try:
                     response = self.client.models.generate_content(
                         model=model, contents=self.history, config=config
                     )
                     return response, model
+                except httpx.TimeoutException as error:
+                    # A slow model will likely stay slow: go straight to the next one.
+                    last_error = error
+                    break
                 except errors.APIError as error:
                     # 429 (rate limit) and 5xx (overloaded) are temporary; anything else is a bug.
                     if error.code != 429 and error.code < 500:
                         raise
                     last_error = error
-                    if attempt < RETRIES_PER_MODEL - 1:
-                        time.sleep(2**attempt)
+                    if attempt < attempts - 1:
+                        time.sleep(1)
         raise last_error
 
     def _run_tool(self, name: str, args: dict) -> dict:
