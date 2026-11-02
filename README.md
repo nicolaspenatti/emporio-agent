@@ -1,5 +1,7 @@
 # Empório da Música: Customer Service Agent
 
+<sub>🇧🇷 [Versão em português](README.pt-BR.md)</sub>
+
 A text-based customer service agent for Empório da Música, a fictional musical instrument store in Campo Grande, Brazil. It answers questions about products, prices, promotions, payment, orders and store policies, and politely declines anything outside the store's scope.
 
 The agent talks to customers in Brazilian Portuguese, so the example conversations, the prompt and the store data are in Portuguese. Code, documentation and this README are in English.
