@@ -4,7 +4,7 @@
 
 A text-based customer service agent for Empório da Música, a fictional musical instrument store in Campo Grande, Brazil. It answers questions about products, prices, promotions, payment, orders and store policies, and politely declines anything outside the store's scope.
 
-The agent talks to customers in Brazilian Portuguese, so the example conversations, the prompt and the store data are in Portuguese. Code, documentation and this README are in English.
+The agent talks to customers in Brazilian Portuguese, so the example conversations, the prompt and the store data are in Portuguese. Code, this README and the [assumptions document](docs/suposicoes-en.md) are in English; the evaluation notes and the prompt injection report are in Portuguese.
 
 <p align="center"><img src="docs/demo-web.png" alt="Web demo: a phone-style chat where the agent quotes the price of a guitar and its installment options" width="320"></p>
 
@@ -26,7 +26,7 @@ uv sync
 | `uv run emporio-agent` | Chat in the terminal. Commands: `/nova` (new conversation), `/sair` (quit) |
 | `uv run emporio-agent --debug` | Same, also showing every tool call, its arguments and the model that answered |
 | `uv run emporio-web` | Web demo at http://localhost:8000, a phone-style chat with an option to show tool calls |
-| `uv run pytest` | 31 unit tests for business rules and agent safeguards (no API key needed) |
+| `uv run pytest` | 33 unit tests for business rules and agent safeguards (no API key needed) |
 | `uv run python evals/run_evals.py` | 18 end-to-end evaluation cases against the real model (about 3 minutes) |
 
 Optional settings in `.env`:
@@ -104,7 +104,7 @@ The Gemini SDK and frameworks like LangChain or LangGraph can run the tool loop 
 The free tier is not always available. During development the main model (`gemini-3.5-flash`) returned "high demand" errors for hours, and older models such as `gemini-2.5-flash` are closed to new users. So the agent has:
 
 - **A fallback model** (`gemini-flash-lite-latest`). The main model gets 2 attempts with a 12-second timeout, then the agent switches. A slow model switches immediately. The first version waited up to 30 seconds per attempt, and the web demo made it obvious that nobody waits that long in a chat.
-- **Retries only for temporary errors** (429 and 5xx). Any other error is a bug and is not hidden.
+- **Retries only for temporary errors** (429 and 5xx). A model that does not exist for the key (404, as already happened with `gemini-2.5-flash`) is skipped straight to the fallback. Any other error is a bug and is not hidden.
 - **A friendly message** when everything fails. The failed turn is also removed from the history, so the conversation never gets corrupted.
 
 ### 5. Prompt strategy
@@ -153,7 +153,7 @@ Ten prompt injection attacks were run against the real model. None leaked custom
 
 | Layer | What it checks | Result |
 |---|---|---|
-| [Unit tests](tests/) (31) | Business rules on the real data: prices, promotions, PIX, installments, shipping, order privacy, deadlines, opening hours, lookup limit, fallback logic | All passing, no API key needed |
+| [Unit tests](tests/) (33) | Business rules on the real data: prices, promotions, PIX, installments, shipping, order privacy, deadlines, opening hours, lookup limit, fallback logic | All passing, no API key needed |
 | [Evaluation](evals/) (18 cases) | LLM behaviour: right tool, right numbers, refusals, privacy, prompt injection | 18/18 on the last run ([results](evals/results.md)) |
 | [Prompt injection report](docs/testes-prompt-injection.md) | 10 attacks: prompt leaking, role change, fake authority, data extraction, order enumeration, encoded instructions | No leaks; led to the lookup limit |
 

@@ -4,6 +4,8 @@
 
 Agente de atendimento por mensagens de texto para a Empório da Música, uma loja fictícia de instrumentos musicais em Campo Grande/MS. Ele responde sobre produtos, preços, promoções, pagamento, pedidos e políticas da loja, e recusa com educação o que foge do escopo.
 
+O agente conversa em português, assim como o prompt, os dados da loja, as conversas de exemplo, as notas da avaliação e o relatório de prompt injection. O código e o README principal estão em inglês.
+
 <p align="center"><img src="docs/demo-web.png" alt="Demo web: chat em formato de celular em que o agente informa o preço de um violão e as opções de parcelamento" width="320"></p>
 
 <p align="center"><em>Demo web com "mostrar ferramentas chamadas" ligado: todo preço vem de uma ferramenta, não da memória do modelo.</em></p>
@@ -24,7 +26,7 @@ uv sync
 | `uv run emporio-agent` | Chat no terminal. Comandos: `/nova` (nova conversa), `/sair` |
 | `uv run emporio-agent --debug` | O mesmo, mostrando cada ferramenta chamada, os argumentos e o modelo que respondeu |
 | `uv run emporio-web` | Demo web em http://localhost:8000, um chat em formato de celular com opção de mostrar as ferramentas chamadas |
-| `uv run pytest` | 31 testes unitários das regras de negócio e das proteções do agente (não precisa de chave) |
+| `uv run pytest` | 33 testes unitários das regras de negócio e das proteções do agente (não precisa de chave) |
 | `uv run python evals/run_evals.py` | 18 casos de avaliação contra o modelo real (cerca de 3 minutos) |
 
 Configurações opcionais no `.env`:
@@ -102,7 +104,7 @@ O SDK do Gemini e frameworks como LangChain ou LangGraph podem executar o loop d
 O plano gratuito nem sempre está disponível. Durante o desenvolvimento, o modelo principal (`gemini-3.5-flash`) devolveu erros de "alta demanda" por horas, e modelos mais antigos, como o `gemini-2.5-flash`, estão fechados para novos usuários. Por isso, o agente tem:
 
 - **Um modelo reserva** (`gemini-flash-lite-latest`). O principal tem 2 tentativas com limite de 12 segundos, e depois o agente troca. Se o principal estiver lento, a troca é imediata. A primeira versão esperava até 30 segundos por tentativa, e a demo web deixou claro que ninguém espera tanto num chat.
-- **Novas tentativas só para erros temporários** (429 e 5xx). Qualquer outro erro é bug e não é escondido.
+- **Novas tentativas só para erros temporários** (429 e 5xx). Um modelo que não existe para a chave (404, como já aconteceu com o `gemini-2.5-flash`) é pulado direto para o reserva. Qualquer outro erro é bug e não é escondido.
 - **Uma mensagem amigável** quando tudo falha. A mensagem que falhou também sai do histórico, para a conversa nunca ficar corrompida.
 
 ### 5. Estratégia de prompt
@@ -151,7 +153,7 @@ Dez ataques de prompt injection foram rodados contra o modelo real. Nenhum vazou
 
 | Camada | O que verifica | Resultado |
 |---|---|---|
-| [Testes unitários](tests/) (31) | Regras de negócio com os dados reais: preços, promoções, PIX, parcelas, frete, privacidade de pedidos, prazos, horário, limite de consultas, troca de modelo | Todos passando, sem precisar de chave |
+| [Testes unitários](tests/) (33) | Regras de negócio com os dados reais: preços, promoções, PIX, parcelas, frete, privacidade de pedidos, prazos, horário, limite de consultas, troca de modelo | Todos passando, sem precisar de chave |
 | [Avaliação](evals/) (18 casos) | Comportamento do LLM: ferramenta certa, números certos, recusas, privacidade, prompt injection | 18/18 na última execução ([resultados](evals/results.md)) |
 | [Relatório de prompt injection](docs/testes-prompt-injection.md) | 10 ataques: vazar o prompt, trocar de papel, falsa autoridade, extrair dados, enumerar pedidos, instruções codificadas | Nenhum vazamento; motivou o limite de consultas |
 
