@@ -42,3 +42,4 @@ O PDF original foi transcrito para Markdown. Ele vai inteiro no system prompt do
 
 - **Filtro de preço:** "até R$ 1.000" considera o preço final com promoção ativa, que é o que o cliente paga. O desconto do PIX não entra no filtro.
 - **Consulta de pedido:** exige o número do pedido e o e-mail do cliente. Se algum dos dois não bater, a resposta é a mesma ("não encontrado"), para não revelar quais pedidos existem. Em produção, a identidade viria do próprio número de WhatsApp.
+- **Limite de tentativas:** depois de 3 consultas de pedido sem sucesso na mesma conversa, o agente para de consultar e orienta o cliente a falar com a equipe. A regra fica no código, então vale mesmo que o modelo seja manipulado a tentar várias combinações de número e e-mail.

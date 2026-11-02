@@ -42,3 +42,4 @@ The original PDF was transcribed to Markdown. The whole manual goes into the age
 
 - **Price filter:** "up to R$ 1,000" uses the final price with any active promotion, which is what the customer pays. The PIX discount is not part of the filter.
 - **Order lookup:** requires the order number and the customer's e-mail. If either one does not match, the answer is the same ("not found"), so the tool does not reveal which orders exist. In production, identity would come from the customer's WhatsApp number.
+- **Attempt limit:** after 3 unsuccessful order lookups in the same conversation, the agent stops looking up orders and tells the customer to contact the team. The rule lives in code, so it holds even if the model is manipulated into trying many order number and e-mail combinations.

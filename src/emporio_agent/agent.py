@@ -16,6 +16,7 @@ from .prompt import build_system_prompt
 from .tools import get_order, payment_options, search_products
 
 MAX_TOOL_ROUNDS = 5
+MAX_FAILED_ORDER_LOOKUPS = 3
 RETRIES_PER_MODEL = 3
 REQUEST_TIMEOUT_MS = 30_000
 UNAVAILABLE_MESSAGE = (
@@ -122,9 +123,11 @@ class Agent:
         self.models = [m for m in (model, fallback_model) if m]
         self.tools = [types.Tool(function_declarations=_tool_declarations())]
         self.history: list[types.Content] = []
+        self.failed_order_lookups = 0
 
     def reset(self) -> None:
         self.history = []
+        self.failed_order_lookups = 0
 
     def reply(self, message: str) -> Reply:
         turn_start = len(self.history)
@@ -180,12 +183,25 @@ class Agent:
                         time.sleep(2**attempt)
         raise last_error
 
-    @staticmethod
-    def _run_tool(name: str, args: dict) -> dict:
+    def _run_tool(self, name: str, args: dict) -> dict:
         function = TOOL_FUNCTIONS.get(name)
         if function is None:
             return {"error": f"Ferramenta desconhecida: {name}"}
+        # Enforced in code, not in the prompt, so a manipulated model still
+        # cannot be used to guess order numbers and e-mails.
+        if name == "get_order" and self.failed_order_lookups >= MAX_FAILED_ORDER_LOOKUPS:
+            return {
+                "found": False,
+                "blocked": True,
+                "message": (
+                    "Limite de tentativas de consulta atingido nesta conversa. Não tente de novo: "
+                    "oriente o cliente a falar com a equipe pelo WhatsApp ou e-mail."
+                ),
+            }
         try:
-            return function(**args)
+            result = function(**args)
         except (TypeError, ValueError, KeyError) as error:
             return {"error": f"Argumentos inválidos para {name}: {error}"}
+        if name == "get_order" and not result["found"]:
+            self.failed_order_lookups += 1
+        return result
