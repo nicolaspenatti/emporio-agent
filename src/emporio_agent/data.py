@@ -7,7 +7,7 @@ memory once. A database would add setup cost without any benefit here.
 import csv
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -17,14 +17,14 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 STORE_TZ = ZoneInfo("America/Campo_Grande")
 
 
-@dataclass(frozen=True)
+@dataclass
 class Category:
     id: int
     name: str
     description: str
 
 
-@dataclass(frozen=True)
+@dataclass
 class Promotion:
     id: int
     product_id: int
@@ -33,7 +33,7 @@ class Promotion:
     is_active: bool
 
 
-@dataclass(frozen=True)
+@dataclass
 class Product:
     id: int
     name: str
@@ -42,10 +42,10 @@ class Product:
     price: float
     stock: int
     status: str  # active | discontinued | coming_soon
-    specs: dict = field(hash=False)
+    specs: dict
 
 
-@dataclass(frozen=True)
+@dataclass
 class Customer:
     id: int
     name: str
@@ -54,13 +54,13 @@ class Customer:
     city: str
 
 
-@dataclass(frozen=True)
+@dataclass
 class OrderItem:
     product_id: int
     quantity: int
 
 
-@dataclass(frozen=True)
+@dataclass
 class Order:
     id: int
     customer_id: int
@@ -74,7 +74,7 @@ class Order:
     items: tuple[OrderItem, ...]
 
 
-@dataclass(frozen=True)
+@dataclass
 class Store:
     categories: dict[int, Category]
     products: dict[int, Product]

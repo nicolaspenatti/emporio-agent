@@ -54,7 +54,7 @@ def _normalize(text: str) -> str:
 
 
 def _money(value: float) -> float:
-    return round(value + 1e-9, 2)
+    return round(value, 2)
 
 
 def _availability(product: Product) -> str:
@@ -146,20 +146,6 @@ def search_products(
     return response
 
 
-def list_categories() -> dict:
-    """Lists catalog categories with how many products each one currently has."""
-    store = load_store()
-    counts = {cid: 0 for cid in store.categories}
-    for product in store.products.values():
-        counts[product.category_id] += 1
-    return {
-        "categories": [
-            {"name": c.name, "description": c.description, "product_count": counts[c.id]}
-            for c in store.categories.values()
-        ]
-    }
-
-
 def _min_installment(n: int) -> float:
     """Policy 3.1: minimum installment depends on the number of installments."""
     if n <= 3:
@@ -187,10 +173,8 @@ def payment_options(items: list[dict], city: str | None = None) -> dict:
             warnings.append(f"{product.name} está {_availability(product)} e não entrou no cálculo.")
             continue
         if quantity > product.stock:
-            warnings.append(
-                f"{product.name}: só há {product.stock} unidade(s) em estoque; cálculo feito com {product.stock}."
-            )
-            quantity = product.stock
+            warnings.append(f"{product.name}: só há {product.stock} unidade(s) em estoque; não entrou no cálculo.")
+            continue
         view = _product_view(store, product)
         lines.append({"name": product.name, "quantity": quantity, **{k: view[k] for k in ("price_original", "promotion", "price_final", "price_pix")}})
         total_final += view["price_final"] * quantity
@@ -283,8 +267,7 @@ def get_order(order_id: int, email: str) -> dict:
         delivered = order.estimated_delivery
         result["policy_checks"] = {
             "assumed_delivery_date": delivered.isoformat(),
-            "regret_return_7_days_from_delivery": _deadline(delivered, 7, today),
-            "preference_exchange_7_days_from_delivery": _deadline(delivered, 7, today),
+            "return_or_exchange_7_days_from_delivery": _deadline(delivered, 7, today),
             "defect_exchange_30_days_from_purchase": _deadline(order.order_date, 30, today),
             "legal_warranty_90_days_from_delivery": _deadline(delivered, 90, today),
         }

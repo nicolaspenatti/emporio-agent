@@ -124,13 +124,13 @@ def test_order_requires_matching_email():
 def test_delivered_order_return_windows():
     checks = get_order(1, email_of(3))["policy_checks"]
     assert checks["assumed_delivery_date"] == "2025-10-25"
-    assert checks["regret_return_7_days_from_delivery"]["within_deadline"] is False
+    assert checks["return_or_exchange_7_days_from_delivery"]["within_deadline"] is False
 
 
 def test_return_window_open_right_after_delivery(monkeypatch):
     monkeypatch.setenv("EMPORIO_NOW", "2025-10-30T10:00")
     checks = get_order(1, email_of(3))["policy_checks"]
-    assert checks["regret_return_7_days_from_delivery"]["within_deadline"] is True
+    assert checks["return_or_exchange_7_days_from_delivery"]["within_deadline"] is True
 
 
 def test_shipped_order_past_estimate_is_flagged_as_delayed():
