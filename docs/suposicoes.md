@@ -1,5 +1,7 @@
 # Suposições e tratamento de dados
 
+> English version: [`suposicoes-en.md`](suposicoes-en.md).
+
 O enunciado pede que ambiguidades sejam resolvidas com uma interpretação razoável e documentada. Este arquivo registra cada uma delas.
 
 ## Manual de políticas (`data/politicas_da_loja.md`)
@@ -12,7 +14,7 @@ O PDF original foi transcrito para Markdown. Ele vai inteiro no system prompt do
 | 2 | E-mail aparece como `contato@emporiodamusica.com.br` (capa) e `contato@empóriodamusica.com.br` (seção 1.2). | Adotado **`contato@emporiodamusica.com.br`**, sem acento. | Acento em domínio é quase certamente erro de digitação. |
 | 3 | A tabela de pagamento diz "parcela mínima de R$ 100,00" para o crédito, mas a seção 3.1 define mínimos por faixa (R$ 50 / R$ 80 / R$ 100). | Vale a **seção 3.1**. A tabela passa a remeter a ela. | A regra específica prevalece sobre o resumo da tabela. |
 | 4 | Seção 3.1, até 3x: "sem valor mínimo de parcela (exceto abaixo de R$ 50,00)". | Interpretado como **parcela mínima de R$ 50,00**. | É a única leitura que dá sentido à exceção. |
-| 5 | O manual diz que o catálogo tem "mais de 300 instrumentos", mas o sistema tem 64 produtos. | Frase **removida**. | O agente não deve afirmar algo que os dados contradizem. |
+| 5 | O manual diz que o catálogo tem "mais de 300 instrumentos", mas o sistema tem 65 produtos. | Frase **removida**. | O agente não deve afirmar algo que os dados contradizem. |
 
 ## Regras ambíguas mantidas no texto (tratadas no código ou no prompt)
 
@@ -30,7 +32,7 @@ O PDF original foi transcrito para Markdown. Ele vai inteiro no system prompt do
 | 1 | Não existe data real de entrega, só `estimated_delivery`. | Para pedidos entregues, a data estimada é tratada como data de recebimento nos prazos de devolução e garantia. |
 | 2 | Os pedidos 3 e 20 têm `total_brl` diferente da soma dos preços atuais dos itens. | Vale o `total_brl`, que é o que o cliente pagou. Preços mudam com o tempo. |
 | 3 | Um produto pode ter mais de uma promoção cadastrada. | Promoções não acumulam (política 6.2), então vale só a ativa de maior desconto. Hoje nenhum produto tem duas ativas. |
-| 4 | As categorias de sopro e de cordas orquestrais não têm nenhum produto. | O agente informa que no momento não há opções, sem inventar produtos. |
+| 4 | As categorias de sopro (madeiras e metais) e de cordas orquestrais não têm nenhum produto. | O agente informa que no momento não há opções, sem inventar produtos. |
 | 5 | Os clientes 11 e 43 têm o mesmo e-mail (provável cadastro duplicado). | A verificação de pedido compara o e-mail do cliente dono do pedido, então funciona para os dois. |
 | 6 | O pedido 8 está "enviado" com entrega estimada já vencida. | A ferramenta marca o pedido como atrasado, e o agente orienta o cliente a falar com a equipe. |
 | 7 | Os status `pending` e `confirmed` não são explicados. | Interpretados como "aguardando confirmação do pagamento" e "pagamento confirmado, em preparação". |
